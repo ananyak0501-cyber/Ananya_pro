@@ -1,56 +1,72 @@
-let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-let score = localStorage.getItem("score") || 0;
+let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+let score = parseInt(localStorage.getItem('score')) || 0;
 
-function addTask() {
-    let input = document.getElementById("taskInput");
-    let text = input.value;
+const taskInput = document.getElementById('task-input');
+const addBtn = document.getElementById('add-btn');
+const taskList = document.getElementById('task-list');
+const scoreDisplay = document.getElementById('score');
+const progressFill = document.getElementById('progress');
+const levelTitle = document.getElementById('level-title');
 
-    if (text === "") return;
+function updateStats() {
+  scoreDisplay.innerText = score;
+  const currentLevel = Math.floor(score / 100) + 1;
+  const progressPercent = score % 100;
+  
+  progressFill.style.width = `${progressPercent}%`;
+  levelTitle.innerText = `Lvl ${currentLevel}`;
 
-    tasks.push({ text: text, done: false });
-    input.value = "";
-
-    updateData();
+  localStorage.setItem('score', score);
+  localStorage.setItem('tasks', JSON.stringify(tasks));
 }
 
-function toggleTask(index) {
-    if (!tasks[index].done) {
-        score = parseInt(score) + 10; // earn points
-    }
-    tasks[index].done = !tasks[index].done;
-    updateData();
+function renderTasks() {
+  taskList.innerHTML = '';
+  tasks.forEach((task, index) => {
+    const li = document.createElement('li');
+    li.className = `task-item ${task.completed ? 'completed' : ''}`;
+    
+    li.innerHTML = `
+      <span>${task.text}</span>
+      <div class="actions">
+        ${!task.completed ? `<button class="btn-done" onclick="completeTask(${index})">✔</button>` : ''}
+        <button class="btn-delete" onclick="deleteTask(${index})">✖</button>
+      </div>
+    `;
+    taskList.appendChild(li);
+  });
+  updateStats();
 }
 
-function deleteTask(index) {
-    tasks.splice(index, 1);
-    updateData();
-}
+addBtn.addEventListener('click', () => {
+  const text = taskInput.value.trim();
+  if (text) {
+    tasks.push({ text, completed: false });
+    taskInput.value = '';
+    renderTasks();
+  }
+});
 
-function updateData() {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-    localStorage.setItem("score", score);
-    displayTasks();
-}
-
-function displayTasks() {
-    let list = document.getElementById("taskList");
-    list.innerHTML = "";
-
-    document.getElementById("score").innerText = score;
-
-    tasks.forEach((task, index) => {
-        let li = document.createElement("li");
-        li.className = task.done ? "completed" : "";
-
-        li.innerHTML = `
-            ${task.text}
-            <br>
-            <button onclick="toggleTask(${index})">✔</button>
-            <button onclick="deleteTask(${index})">❌</button>
-        `;
-
-        list.appendChild(li);
+window.completeTask = (index) => {
+  if (!tasks[index].completed) {
+    tasks[index].completed = true;
+    score += 10; // Gain 10 pts per task
+    
+    // Confetti effect!
+    confetti({
+      particleCount: 50,
+      spread: 60,
+      origin: { y: 0.8 }
     });
-}
 
-displayTasks();
+    renderTasks();
+  }
+};
+
+window.deleteTask = (index) => {
+  tasks.splice(index, 1);
+  renderTasks();
+};
+
+// Initial Render
+renderTasks();
